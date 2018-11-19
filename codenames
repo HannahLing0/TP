@@ -1,0 +1,275 @@
+from tkinter import *
+import random
+#andrewid: hannahli
+#Clicker game
+####################################
+# init
+####################################
+
+def init(data):
+    # There is only one init, not one-per-mode
+    data.mode = "splashScreen"
+    data.time = 20
+    data.score = 0
+    data.splashScreenImage = PhotoImage(file="hw6-image.gif")
+    
+    #SplashScreen stuff
+    data.headingRight = True
+    data.headingDown = True
+    data.margin = 25
+    data.timerDelay = 100
+    data.timerCalls = 0
+    data.erenSpeed = 15
+    data.erenX = random.randint(data.margin,data.width-data.margin)
+    data.erenY = random.randint(data.margin, data.height-data.margin)
+    
+    #playGame stuff 
+    data.rectWidth=data.width*2
+    data.rectHeight=data.height*2
+    data.scrollX=0
+    data.scrollY = 0
+    data.scrollMargin=data.height/10
+    data.erenList = []
+    
+
+####################################
+# mode dispatcher
+####################################
+
+def mousePressed(event, data):
+    #Calls correct mousePressed function
+    if (data.mode == "splashScreen"): splashScreenMousePressed(event, data)
+    elif (data.mode == "playGame"):   playGameMousePressed(event, data)
+    elif (data.mode == "end"):       endMousePressed(event, data)
+
+def keyPressed(event, data):
+    #Calls correct keyPressed function
+    if (data.mode == "splashScreen"): splashScreenKeyPressed(event, data)
+    elif (data.mode == "playGame"):   playGameKeyPressed(event, data)
+    elif (data.mode == "end"):       endKeyPressed(event, data)
+
+def timerFired(data):
+    #calls correct timerFired function
+    if (data.mode == "splashScreen"): splashScreenTimerFired(data)
+    elif (data.mode == "playGame"):   playGameTimerFired(data)
+    elif (data.mode == "end"):       endTimerFired(data)
+
+def redrawAll(canvas, data):
+    #calls correct redrawAll function
+    if (data.mode == "splashScreen"): splashScreenRedrawAll(canvas, data)
+    elif (data.mode == "playGame"):   playGameRedrawAll(canvas, data)
+    elif (data.mode == "end"):       endRedrawAll(canvas, data)
+
+####################################
+# splashScreen mode
+####################################
+
+def splashScreenMousePressed(event, data):
+    #No mousepressed action
+    pass
+
+def splashScreenKeyPressed(event, data):
+    #Start game when p is pressed
+    if event.char == "p":
+        data.mode = "playGame"
+
+def splashScreenTimerFired(data):
+    #Bounce Eren every time timer is fired
+    bounceEren(data)
+
+def bounceEren(data):
+    #Calculations to make Eren bounce off walls
+    if (data.headingRight == True):
+        if (data.erenX + data.margin > data.width):
+            data.headingRight = False
+        else:
+            data.erenX += data.erenSpeed
+    else:
+        if (data.erenX < data.margin):
+            data.headingRight = True
+        else:
+            data.erenX -= data.erenSpeed
+    
+    # Move horizontally
+    if (data.headingDown == True):
+        if (data.erenY + data.margin > data.height):
+            data.headingDown = False
+        else:
+            data.erenY += data.erenSpeed
+    else:
+        if (data.erenY < data.margin):
+            data.headingDown = True
+        else:
+            data.erenY -= data.erenSpeed
+            
+            
+def splashScreenRedrawAll(canvas, data):
+    #Draws everything on the splash screen
+    canvas.create_text(data.width/2, data.height/2-20,
+                       text="The 112 Clicker Game!", font="Arial 26 bold")
+    canvas.create_text(data.width/2, data.height/2+20,
+                       text="Press 'p' to play!", font="Arial 20")
+    data.splashScreenImage = PhotoImage(file="hw6-image.gif")
+    canvas.create_image(data.erenX,data.erenY, anchor = CENTER, 
+    image=data.splashScreenImage)
+                       
+
+
+
+####################################
+# end mode
+####################################
+
+def endMousePressed(event, data):
+    #No mousePressed action
+    pass
+
+def endKeyPressed(event, data):
+    #Restarts when S is pressed
+    if event.char == "s":
+        data.mode = "splashScreen"
+
+def endTimerFired(data):
+    #No timerFired action
+    pass
+
+def endRedrawAll(canvas, data):
+    #Draws everything in end state
+    canvas.create_rectangle(0,0,data.width,data.height,
+                       fill = "red")
+    canvas.create_text(data.width/2, data.height/2-10,
+                       text="GAME OVER!:", font="Arial 20", fill = "white")
+    canvas.create_text(data.width/2, data.height/2+15,
+                       text="Final Score:"+str(data.score), font="Arial 20", 
+                       fill = "white")
+    canvas.create_text(data.width/2, data.height/2+40,
+                       text="Press 's' to play again!", font="Arial 20", 
+                       fill ="white")
+
+####################################
+# playGame mode
+####################################
+
+def playGameMousePressed(event, data):
+    #Removes an eren instance from erenList when clicked
+    for eren in data.erenList[::-1]: #Reversed so we remove "top" overlaps first
+    
+        if ((event.x > eren[0]-data.margin-data.scrollX) and 
+        (event.x < eren[0] + data.margin-data.scrollX) 
+            and (event.y > eren[1] - data.margin-data.scrollY) and
+             event.y < (eren[1]+ data.margin-data.scrollY)):
+            data.score += 1
+            if data.score % 5 == 0:
+                data.time += 1
+            data.erenList.remove(eren)
+            break
+        
+
+def playGameKeyPressed(event, data):
+    #Scrolls screen around when arrow keys pressed
+    if (event.keysym == 'Right'):
+        data.scrollX += data.scrollMargin
+    
+    elif (event.keysym == 'Left'):
+        data.scrollX -= data.scrollMargin
+        
+    elif (event.keysym == 'Up'):
+        data.scrollY -= data.scrollMargin
+        
+    elif (event.keysym == 'Down'):
+        data.scrollY += data.scrollMargin
+
+def playGameTimerFired(data):
+    #Increments time and Eren placement when timerFired called
+    if data.timerCalls % 5 == 0: #Every .5 seconds
+        makeNewEren(data)
+
+    if data.timerCalls % 10 == 0: #Every second
+        data.time -= 1
+    data.timerCalls += 1
+    if data.time == 0:
+        data.mode = "end"
+    
+def makeNewEren(data):
+    #Generates a random new Eren
+    newEren = [random.randint(-data.width/2+data.margin,
+    data.width+data.width/2-data.margin),
+    random.randint(-data.height/2+data.margin, 
+    data.height+data.height/2-data.margin)]
+    data.erenList.append(newEren)
+    
+    
+def drawErens(canvas,data):
+    #Draw the Erens in erenList
+    for eren in data.erenList:
+        canvas.create_image(eren[0]-data.scrollX,eren[1]-data.scrollY, anchor = CENTER, 
+    image=data.splashScreenImage)
+                       
+        
+            
+
+def playGameRedrawAll(canvas, data):
+    #Draws everything in game mode
+    canvas.create_rectangle(-data.width, -data.height, data.width, data.height)
+    
+    canvas.create_rectangle(-data.width/2-data.scrollX,
+                            -data.height/2-data.scrollY,
+                            data.width+data.width/2-data.scrollX,
+                            data.height+data.height/2-data.scrollY, width = 5
+                            )
+    drawErens(canvas,data)
+    canvas.create_text(data.margin*1.5, data.height-10,
+                       text="Score = " + str(data.score), font="Arial 10 bold")
+    canvas.create_text(data.margin*1.5, data.height-30,
+                       text="Time = " + str(data.time), font="Arial 10 bold")
+
+
+####################################
+# use the run function as-is
+####################################
+
+def run(width=300, height=300):
+    def redrawAllWrapper(canvas, data):
+        canvas.delete(ALL)
+        canvas.create_rectangle(0, 0, data.width, data.height,
+                                fill='white', width=0)
+        redrawAll(canvas, data)
+        canvas.update()    
+
+    def mousePressedWrapper(event, canvas, data):
+        mousePressed(event, data)
+        redrawAllWrapper(canvas, data)
+
+    def keyPressedWrapper(event, canvas, data):
+        keyPressed(event, data)
+        redrawAllWrapper(canvas, data)
+
+    def timerFiredWrapper(canvas, data):
+        timerFired(data)
+        redrawAllWrapper(canvas, data)
+        # pause, then call timerFired again
+        canvas.after(data.timerDelay, timerFiredWrapper, canvas, data)
+    # Set up data and call init
+    class Struct(object): pass
+    data = Struct()
+    data.width = width
+    data.height = height
+    data.timerDelay = 100 # milliseconds
+    root = Toplevel()
+    root.resizable(width=False, height=False) # prevents resizing window
+    init(data)
+    # create the root and the canvas
+    canvas = Canvas(root, width=data.width, height=data.height)
+    canvas.configure(bd=0, highlightthickness=0)
+    canvas.pack()
+    # set up events
+    root.bind("<Button-1>", lambda event:
+                            mousePressedWrapper(event, canvas, data))
+    root.bind("<Key>", lambda event:
+                            keyPressedWrapper(event, canvas, data))
+    timerFiredWrapper(canvas, data)
+    # and launch the app
+    root.mainloop()  # blocks until window is closed
+    print("bye!")
+
+run(400, 400)
