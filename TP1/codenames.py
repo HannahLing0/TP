@@ -1,8 +1,6 @@
 from tkinter import *
 import random
 import module_manager
-import tkinter.font
-
 module_manager.review()
 #andrewid: hannahli
 #112 TP!
@@ -24,49 +22,12 @@ def init(data):
 	data.twentyFiveWords = []
 	data.gameMap = [[0]*data.numCells for j in range(data.numCells)]
 	loadGame(data)
-	data.cellWidth = (data.width//data.numCells) - data.margin/2
-	data.cellHeight = (data.height//data.numCells) -data.margin/2
-
+	cellWidth = (data.width//data.numCells) - data.margin/2
+	cellHeight = (data.height//data.numCells) - data.margin/2
+	data.cellSize = min(cellWidth, cellHeight)
 	data.colors = {"startingColor":"#fcf9ef", "neutral":"#ede8d5", "red": "#bc4629", "blue": "#5b548e",
 	"assassin": "#504f54"}
-	data.isRedTurn = True
-	data.font = tkinter.font.Font(family = "Raleway", size = 12)
-	data.font2 = tkinter.font.Font(family = "Raleway ExtraBold", size = 11)
-	data.fontTimer = tkinter.font.Font(family = "Raleway ExtraBold", size = 20)
-	data.time = 90
-	data.timerCalls = 0
-	data.clueString = ""
-	data.turnActive = True
-	data.blueScore = 0
-	data.redScore = 0
-	data.clicksAllowed = 0
 
-#Round rectangle function from Stack Overflow: https://stackoverflow.com/questions/44099594/how-to-make-a-tkinter-canvas-rectangle-with-rounded-corners
-def round_rectangle(canvas,x1, y1, x2, y2, radius=25, **kwargs):
-
-    points = [x1+radius, y1,
-              x1+radius, y1,
-              x2-radius, y1,
-              x2-radius, y1,
-              x2, y1,
-              x2, y1+radius,
-              x2, y1+radius,
-              x2, y2-radius,
-              x2, y2-radius,
-              x2, y2,
-              x2-radius, y2,
-              x2-radius, y2,
-              x1+radius, y2,
-              x1+radius, y2,
-              x1, y2,
-              x1, y2-radius,
-              x1, y2-radius,
-              x1, y1+radius,
-              x1, y1+radius,
-              x1, y1]
-
-    return canvas.create_polygon(points, **kwargs, smooth=True)
-	
 def loadGame(data):
 	data.wordBank = []
 	ogWords = readFile("ogWords.txt")
@@ -150,7 +111,6 @@ def redrawAll(canvas, data):
 	elif (data.mode == "single"):   singleRedrawAll(canvas, data)
 	elif (data.mode == "end"):       endRedrawAll(canvas, data)
 
-
 ####################################
 # splashScreen mode
 ####################################
@@ -158,7 +118,7 @@ def redrawAll(canvas, data):
 def splashScreenMousePressed(event, data):
 	#No mousepressed action
 	if (event.x > data.width/2 - 100) and(event.x < data.width/2 + 100) and(event.y > data.height/2 + 175) and(event.y < data.height/2 + 225):
-			data.mode = "codemaster"
+			data.mode = "playGame"
 
 	elif (event.x > data.width/2 - 100) and(event.x < data.width/2 + 100) and(event.y > data.height/2 + 100) and(event.y < data.height/2 + 150):
 			data.mode = "single"
@@ -174,22 +134,20 @@ def splashScreenTimerFired(data):
 def splashScreenRedrawAll(canvas, data):
 	#Draws everything on the splash screen
 	canvas.create_text(data.width/2, data.height/2-50,
-					   text="112 Codenames!", font = data.font)
+                       text="112 Codenames!", font="Arial 26 bold")
 
 	canvas.create_text(data.width/2, data.height/2+20,
-					   text="Select your playing mode:", font = data.font)				   
+                       text="Select your playing mode:", font="Arial 20")				   
 	canvas.create_rectangle(data.width/2 - 100, data.height/2 + 150, data.width/2 + 100, 
 		data.height/2 + 100,outline = "white", fill = "#b3dd82")
 
-	canvas.create_text(data.width/2, data.height/2 + 125, text = "single player", font = data.font)
+	canvas.create_text(data.width/2, data.height/2 + 125, text = "single player")
 
 	canvas.create_rectangle(data.width/2 - 100, data.height/2 + 225, data.width/2 + 100, 
 		data.height/2 + 175,outline = "white", fill = "#ddc382")
 
-	canvas.create_text(data.width/2, data.height/2 + 200, text = "multiplayer", font = data.font)
-	textentry = Entry(canvas)
+	canvas.create_text(data.width/2, data.height/2 + 200, text = "multiplayer")
 
-	
 
 ####################################
 # end mode
@@ -228,36 +186,11 @@ def endRedrawAll(canvas, data):
 def playGameMousePressed(event, data):
 	if (event.x > data.width/2 + 200) and(event.x < data.width/2 + 300) and(event.y > data.height/2 + 250) and(event.y < data.height/2 + 300):
 			data.mode = "codemaster"
-			data.isRedTurn = not data.isRedTurn
-			data.time = 90
-			data.clueString = ""
-	elif data.turnActive and event.x > data.margin and event.x < data.margin + data.cellWidth*data.numCells:
-		if event.y > data.margin and event. y < data.margin + data.cellHeight*data.numCells:
-			row = (event.y - data.margin) // data.cellHeight
-			col = (event.x - data.margin)// data.cellWidth
-			clickedWord = data.gameMap[int(row)][int(col)]
-			clickedWord.isClickedOn = True
-			if clickedWord.allegiance == "red" and not data.isRedTurn:
-				data.turnActive = False
-				data.redScore += 1
-			elif clickedWord.allegiance == "blue" and data.isRedTurn:
-				data.turnActive = False
-				data.blueScore +=1
-			elif clickedWord.allegiance == "neutral":
-				data.turnActive = False
-			elif clickedWord.allegiance == "assassin":
-				data.turnActive = False
-				data.mode = "end"
-			else:
-				if data.isRedTurn:
-					data.redScore += 1
-				else:
-					data.blueScore += 1
-
-			data.clicksAllowed -= 1
-			
-	if data.clicksAllowed < 1:
-		data.turnActive = False
+	elif event.x > data.margin and event.x < data.margin + data.cellSize*data.numCells:
+		if event.y > data.margin and event. y < data.margin + data.cellSize*data.numCells:
+			row = (event.y - data.margin) // data.cellSize
+			col = (event.x - data.margin)// data.cellSize 
+			data.gameMap[int(row)][int(col)].isClickedOn = True
 		
 
 def playGameKeyPressed(event, data):
@@ -266,28 +199,26 @@ def playGameKeyPressed(event, data):
 
 
 def playGameTimerFired(data):
-	if data.timerCalls % 10 == 0: #Every second
-		data.time -= 1
-	data.timerCalls += 1
-	if data.time < 1:
-		data.mode = "end"
+	#Increments time and Eren placement when timerFired called
+	pass
 	
 def drawBoard(canvas, data):
 
 	
 	for row in range(data.numCells):
 		for col in range(data.numCells):
-			left = (col*data.cellWidth) + data.margin/4
-			top = (row*data.cellHeight)
+			left = (col*data.cellSize) 
+			top = (row*data.cellSize)
 			myWord = data.gameMap[row][col]
-
-			color = data.colors[myWord.allegiance]
 			if myWord.isClickedOn:
-				round_rectangle(canvas,data.margin+left, data.margin+top, data.margin+left+data.cellWidth, data.margin+top+data.cellHeight, radius=20, fill=color, outline = "white", width = 4)
+				color = data.colors[myWord.allegiance]
 			else:
-				round_rectangle(canvas,data.margin+left, data.margin+top, data.margin+left+data.cellWidth, data.margin+top+data.cellHeight, radius=20, fill=data.colors["startingColor"], outline = "white", width = 4)
-			canvas.create_text(data.margin+left+data.cellWidth/2, data.margin+top+data.cellHeight/2,
-					text = myWord.value, fill ="black", font = data.font2)
+				color = data.colors["startingColor"]
+			canvas.create_rectangle(data.margin+left,data.margin+top,data.margin+left+data.cellSize,
+			data.margin+top+data.cellSize,outline = "white", fill = color)
+			
+			canvas.create_text(data.margin+left+data.cellSize/2, data.margin+top+data.cellSize/2,
+                    text = myWord.value, font = "Arial 10 bold" , fill ="black")
 
 
 def playGameRedrawAll(canvas, data):
@@ -297,86 +228,54 @@ def playGameRedrawAll(canvas, data):
 	canvas.create_rectangle(data.width/2+200 , data.height/2+250, data.width/2+300, 
 		data.height/2 + 300,outline = "white", fill = "#42cbf4")
 
-	canvas.create_text(data.width/2, data.height/2 +275,
-						text = str(data.time), font=data.fontTimer)
-
-	canvas.create_text(data.width/2 + 250, data.height/2 + 275, text = "Codemaster", font = data.font)
-	if data.isRedTurn:
-		canvas.create_text(data.width/2, data.height/2 + 225, text = "Red team, your clue is: " + data.textEntry.get(), font = data.font, fill = data.colors["red"])
-	else:
-		canvas.create_text(data.width/2, data.height/2 + 225, text = "Blue team, your clue is: " + data.textEntry.get(), font = data.font, fill = data.colors["blue"])
-	canvas.create_text(data.width/2 + 300, 20, text = data.redScore, fill = data.colors["red"], font = data.fontTimer)
-	canvas.create_text(data.width/2 - 300, 20, text = data.blueScore, fill = data.colors["blue"], font = data.fontTimer)
+	canvas.create_text(data.width/2 + 250, data.height/2 + 275, text = "Codemaster")
 ####################################
 # codemaster mode
 ####################################
 
 def codemasterMousePressed(event, data):
-	if (event.x > data.width/2 + 200) and(event.x < data.width/2 + 300) and(event.y > data.height/2 + 250) and(event.y < data.height/2 + 300) and len(data.clueString) > 0:
+	if (event.x > data.width/2 + 200) and(event.x < data.width/2 + 300) and(event.y > data.height/2 + 250) and(event.y < data.height/2 + 300):
 			data.mode = "playGame"
-			data.turnActive = True
-			data.clicksAllowed = int(data.clueString[-1]) + 1
 		
 
 def codemasterKeyPressed(event, data):
-	if event.keysym == "BackSpace":
-		data.clueString = data.clueString[:len(data.clueString)-1]
-	else:
-		data.clueString += event.char
-
+	#Scrolls screen around when arrow keys pressed
+	pass
 
 
 def codemasterTimerFired(data):
-
-	if data.timerCalls % 10 == 0: #Every second
-		data.time -= 1
-	data.timerCalls += 1
-
-	if data.time < 1:
-		data.mode = "end"
+	#Increments time and Eren placement when timerFired called
+	pass
 	
 
-def codemasterDrawBoard(canvas, data):
+
+
+def codemasterRedrawAll(canvas, data):
 	for row in range(data.numCells):
 		for col in range(data.numCells):
-			left = (col*data.cellWidth) + data.margin/4
-			top = (row*data.cellHeight)
+			left = (col*data.cellSize) 
+			top = (row*data.cellSize)
 			myWord = data.gameMap[row][col]
 
 			color = data.colors[myWord.allegiance]
 
-			round_rectangle(canvas,data.margin+left, data.margin+top, data.margin+left+data.cellWidth, data.margin+top+data.cellHeight, radius=20, fill=color, outline = "white", width = 4)
-
-			canvas.create_text(data.margin+left+data.cellWidth/2, data.margin+top+data.cellHeight/2,
-					text = myWord.value, fill ="black", font = data.font2)
-def codemasterRedrawAll(canvas, data):
-	codemasterDrawBoard(canvas,data)
+			canvas.create_rectangle(data.margin+left,data.margin+top,data.margin+left+data.cellSize,
+			data.margin+top+data.cellSize,outline = "white", fill = color)
+			
+			canvas.create_text(data.margin+left+data.cellSize/2, data.margin+top+data.cellSize/2,
+                    text = myWord.value, font = "Arial 10 bold" , fill ="black")
 
 	canvas.create_rectangle(data.width/2+200 , data.height/2+250, data.width/2+300, 
 		data.height/2 + 300,outline = "white", fill = "#42cbf4")
-	canvas.create_text(data.width/2, data.height/2 +275,
-						text = str(data.time), font=data.fontTimer)
 
-	canvas.create_text(data.width/2 + 250, data.height/2 + 275, text = "Player", font = data.font)
-	data.textEntry = Entry(canvas)
-
-	data.textEntry.insert(0, data.clueString)
-	canvas.create_window(data.width/2, data.height/2 + 220, window=data.textEntry, height=20, width=300)
-
-	canvas.create_text(data.width/2 + 300, 20, text = data.redScore, fill = data.colors["red"], font = data.fontTimer)
-	canvas.create_text(data.width/2 - 300, 20, text = data.blueScore, fill = data.colors["blue"], font = data.fontTimer)
+	canvas.create_text(data.width/2 + 250, data.height/2 + 275, text = "Player")
 
 ####################################
 # single mode
 ####################################
 
 def singleMousePressed(event, data):
-	if data.turnActive and event.x > data.margin and event.x < data.margin + data.cellWidth*data.numCells:
-		if event.y > data.margin and event. y < data.margin + data.cellHeight*data.numCells:
-			row = (event.y - data.margin) // data.cellHeight
-			col = (event.x - data.margin)// data.cellWidth
-			clickedWord = data.gameMap[int(row)][int(col)]
-			clickedWord.isClickedOn = True
+	pass
 		
 
 def singleKeyPressed(event, data):
@@ -385,33 +284,16 @@ def singleKeyPressed(event, data):
 
 
 def singleTimerFired(data):
-	if data.timerCalls % 10 == 0: #Every second
-		data.time -= 1
-	data.timerCalls += 1
-	if data.time < 1:
-		data.mode = "end"
+	#Increments time and Eren placement when timerFired called
+	pass
 	
 
-def singleDrawBoard(canvas,data):
-	for row in range(data.numCells):
-		for col in range(data.numCells):
-			left = (col*data.cellWidth) + data.margin/4
-			top = (row*data.cellHeight)
-			myWord = data.gameMap[row][col]
 
-			color = data.colors[myWord.allegiance]
-			if myWord.isClickedOn:
-				round_rectangle(canvas,data.margin+left, data.margin+top, data.margin+left+data.cellWidth, data.margin+top+data.cellHeight, radius=20, fill=color, outline = "white", width = 4)
-			else:
-				round_rectangle(canvas,data.margin+left, data.margin+top, data.margin+left+data.cellWidth, data.margin+top+data.cellHeight, radius=20, fill=data.colors["startingColor"], outline = "white", width = 4)
-			canvas.create_text(data.margin+left+data.cellWidth/2, data.margin+top+data.cellHeight/2,
-					text = myWord.value, fill ="black", font = data.font2)
 
 def singleRedrawAll(canvas, data):
 	#Draws everything in game mode
-	singleDrawBoard(canvas,data)
-	canvas.create_text(data.width/2, data.height/2 +275,
-						text = str(data.time), font=data.fontTimer)
+	canvas.create_text(data.width/2, data.height/2, text = "Singleplayer Mode!")
+
 ####################################
 # Run function from 112 Course Notes
 ####################################
@@ -460,4 +342,4 @@ def run(width=300, height=300):
 	root.mainloop()  # blocks until window is closed
 	print("bye!")
 
-run(1100, 700)
+run(700, 700)
