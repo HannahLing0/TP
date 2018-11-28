@@ -2,6 +2,9 @@ from tkinter import *
 import random
 import module_manager
 import tkinter.font
+import nltk
+from nltk.corpus import wordnet as wn
+
 
 module_manager.review()
 #andrewid: hannahli
@@ -33,13 +36,20 @@ def init(data):
 	data.font = tkinter.font.Font(family = "Raleway", size = 12)
 	data.font2 = tkinter.font.Font(family = "Raleway ExtraBold", size = 11)
 	data.fontTimer = tkinter.font.Font(family = "Raleway ExtraBold", size = 20)
+	data.fontEnd = tkinter.font.Font(family = "Raleway ExtraBold", size = 40)
 	data.time = 90
+	data.singleTime = 0
 	data.timerCalls = 0
 	data.clueString = ""
 	data.turnActive = True
 	data.blueScore = 0
 	data.redScore = 0
 	data.clicksAllowed = 0
+
+	data.winner = None
+	data.singleClue = ""
+	data.logo = PhotoImage(file='codenames_logo.gif')
+	
 
 #Round rectangle function from Stack Overflow: https://stackoverflow.com/questions/44099594/how-to-make-a-tkinter-canvas-rectangle-with-rounded-corners
 def round_rectangle(canvas,x1, y1, x2, y2, radius=25, **kwargs):
@@ -124,6 +134,7 @@ def mousePressed(event, data):
 	elif (data.mode == "codemaster"):   codemasterMousePressed(event, data)
 	elif (data.mode == "single"):   singleMousePressed(event, data)
 	elif (data.mode == "end"):       endMousePressed(event, data)
+	elif (data.mode == "singleEnd"):       singleEndMousePressed(event, data)
 
 
 def keyPressed(event, data):
@@ -133,6 +144,7 @@ def keyPressed(event, data):
 	elif (data.mode == "codemaster"):	codemasterKeyPressed(event, data)
 	elif (data.mode == "single"):	singleKeyPressed(event, data)
 	elif (data.mode == "end"):       endKeyPressed(event, data)
+	elif (data.mode == "singleEnd"):       singleEndKeyPressed(event, data)
 
 def timerFired(data):
 	#calls correct timerFired function
@@ -141,6 +153,7 @@ def timerFired(data):
 	elif (data.mode == "codemaster"):	codemasterTimerFired(data)
 	elif (data.mode == "single"):	singleTimerFired(data)
 	elif (data.mode == "end"):       endTimerFired(data)
+	elif (data.mode == "singleEnd"):       singleEndTimerFired(data)
 
 def redrawAll(canvas, data):
 	#calls correct redrawAll function
@@ -149,7 +162,7 @@ def redrawAll(canvas, data):
 	elif (data.mode == "codemaster"):	codemasterRedrawAll(canvas, data)
 	elif (data.mode == "single"):   singleRedrawAll(canvas, data)
 	elif (data.mode == "end"):       endRedrawAll(canvas, data)
-
+	elif (data.mode == "singleEnd"):       singleEndRedrawAll(canvas, data)
 
 ####################################
 # splashScreen mode
@@ -173,23 +186,29 @@ def splashScreenTimerFired(data):
 
 def splashScreenRedrawAll(canvas, data):
 	#Draws everything on the splash screen
-	canvas.create_text(data.width/2, data.height/2-50,
-					   text="112 Codenames!", font = data.font)
-
-	canvas.create_text(data.width/2, data.height/2+20,
-					   text="Select your playing mode:", font = data.font)				   
+	
+					   
 	canvas.create_rectangle(data.width/2 - 100, data.height/2 + 150, data.width/2 + 100, 
-		data.height/2 + 100,outline = "white", fill = "#b3dd82")
+		data.height/2 + 100,outline = "white", fill = data.colors["red"])
 
 	canvas.create_text(data.width/2, data.height/2 + 125, text = "single player", font = data.font)
 
 	canvas.create_rectangle(data.width/2 - 100, data.height/2 + 225, data.width/2 + 100, 
-		data.height/2 + 175,outline = "white", fill = "#ddc382")
+		data.height/2 + 175,outline = "white", fill = data.colors["blue"])
 
 	canvas.create_text(data.width/2, data.height/2 + 200, text = "multiplayer", font = data.font)
 	textentry = Entry(canvas)
 
 	
+
+	canvas.create_image(data.width/2, data.height/3, anchor = CENTER, image = data.logo)
+	canvas.create_text(data.width/2, data.height/2+20,
+					   text="112 Edition!", font = data.fontTimer, fill = data.colors["red"])
+
+	canvas.create_text(data.width/2, data.height/2+70,
+					   text="For multiplayer, start by giving the screen to the red team's codemaster!", font = data.font, fill = data.colors["assassin"])
+	canvas.create_text(data.width/2, data.height/2+50,
+					   text="Must have Python NLTK installed.", font = data.font, fill = data.colors["assassin"])
 
 ####################################
 # end mode
@@ -204,6 +223,8 @@ def endKeyPressed(event, data):
 	if event.char == "s":
 		data.mode = "splashScreen"
 
+		init(data)
+
 def endTimerFired(data):
 	#No timerFired action
 	pass
@@ -211,16 +232,45 @@ def endTimerFired(data):
 def endRedrawAll(canvas, data):
 	#Draws everything in end state
 	canvas.create_rectangle(0,0,data.width,data.height,
-					   fill = "red")
-	canvas.create_text(data.width/2, data.height/2-10,
-					   text="GAME OVER!:", font="Arial 20", fill = "white")
-	canvas.create_text(data.width/2, data.height/2+15,
-					   text="Final Score:"+str(data.score), font="Arial 20", 
-					   fill = "white")
+					   fill = data.colors["neutral"])
+	if data.winner == "red":
+		canvas.create_text(data.width/2, data.height/2-10,
+					   text="RED TEAM WINS!", font= data.fontEnd,  fill = data.colors["red"])	
+	elif data.winner == "blue":
+		canvas.create_text(data.width/2, data.height/2-10,
+					   text="BLUE TEAM WINS!", font= data.fontEnd,  fill = data.colors["blue"])
+	
 	canvas.create_text(data.width/2, data.height/2+40,
-					   text="Press 's' to play again!", font="Arial 20", 
-					   fill ="white")
+					   text="Press 's' to play again!", fill = data.colors["blue"],font= data.fontTimer)
+####################################
+# singleplayer end mode
+####################################
 
+def singleEndMousePressed(event, data):
+	#No mousePressed action
+	pass
+
+def singleEndKeyPressed(event, data):
+	#Restarts when S is pressed
+	if event.char == "s":
+		data.mode = "splashScreen"
+	init(data)
+
+
+def singleEndTimerFired(data):
+	#No timerFired action
+	pass
+
+def singleEndRedrawAll(canvas, data):
+	#Draws everything in end state
+	canvas.create_rectangle(0,0,data.width,data.height,
+					   fill = data.colors["neutral"])
+
+	canvas.create_text(data.width/2, data.height/2-10,
+		text="You won in "+str(data.singleTime) + " seconds!", font= data.fontEnd,  fill = data.colors["red"])	
+
+	canvas.create_text(data.width/2, data.height/2+40,
+					   text="Press 's' to play again!", fill = data.colors["blue"],font= data.fontTimer)
 ####################################
 # playGame mode
 ####################################
@@ -258,7 +308,15 @@ def playGameMousePressed(event, data):
 			
 	if data.clicksAllowed < 1:
 		data.turnActive = False
+
+	if data.redScore == 9:
+		data.mode = "end"
+		data.winner = "red"
+	elif data.blueScore == 8:
+		data.mode = "end"
+		data.winner = "blue"
 		
+
 
 def playGameKeyPressed(event, data):
 	#Scrolls screen around when arrow keys pressed
@@ -294,8 +352,8 @@ def playGameRedrawAll(canvas, data):
 	#Draws everything in game mode
 	drawBoard(canvas,data)
 
-	canvas.create_rectangle(data.width/2+200 , data.height/2+250, data.width/2+300, 
-		data.height/2 + 300,outline = "white", fill = "#42cbf4")
+	canvas.create_rectangle(data.width/2+190 , data.height/2+250, data.width/2+310, 
+		data.height/2 + 300,outline = "white", fill = data.colors["assassin"])
 
 	canvas.create_text(data.width/2, data.height/2 +275,
 						text = str(data.time), font=data.fontTimer)
@@ -352,8 +410,8 @@ def codemasterDrawBoard(canvas, data):
 def codemasterRedrawAll(canvas, data):
 	codemasterDrawBoard(canvas,data)
 
-	canvas.create_rectangle(data.width/2+200 , data.height/2+250, data.width/2+300, 
-		data.height/2 + 300,outline = "white", fill = "#42cbf4")
+	canvas.create_rectangle(data.width/2+190 , data.height/2+250, data.width/2+310, 
+		data.height/2 + 300,outline = "white", fill = data.colors["assassin"])
 	canvas.create_text(data.width/2, data.height/2 +275,
 						text = str(data.time), font=data.fontTimer)
 
@@ -366,17 +424,99 @@ def codemasterRedrawAll(canvas, data):
 	canvas.create_text(data.width/2 + 300, 20, text = data.redScore, fill = data.colors["red"], font = data.fontTimer)
 	canvas.create_text(data.width/2 - 300, 20, text = data.blueScore, fill = data.colors["blue"], font = data.fontTimer)
 
+	if data.isRedTurn:
+		canvas.create_text(data.width/2, 40, text = "Red Codemaster, type in a clue!", fill = data.colors["red"], font = data.fontTimer)
+	else:
+		canvas.create_text(data.width/2, 40, text = "Blue Codemaster, type in a clue!", fill = data.colors["blue"], font = data.fontTimer)
 ####################################
 # single mode
 ####################################
 
+
+def singleGenerateWordList(data):
+
+	singleWordStrings = []
+	for row in range(data.numCells):
+		for col in range(data.numCells):
+			myWord = data.gameMap[row][col]
+			if myWord.allegiance == "red" and not myWord.isClickedOn:
+				singleWordStrings.append(myWord.value)
+	print(singleWordStrings)
+	return singleWordStrings
+
+#From NLTK tutorial
+def polysemy(word):
+        return len(wn.synsets(word))
+
+def singleGenerateClues(data):
+	if len(singleGenerateWordList(data)) == 1:
+		clues = singleGenerateWordList(data)[0]
+	else:
+
+		clues = random.sample(singleGenerateWordList(data),2)
+	word1 = random.choice(clues)
+	clues.remove(word1)
+	word2 = clues[0]
+
+
+	sense1 = "0" + str(random.randint(1, 3))
+	sense2 = "0" + str(random.randint(1, 3))
+	try:
+		try:
+			synset1 = wn.synset(word1+".n." + sense1)
+		except:
+			try: 
+				synset1 = wn.synset(word1+".n.01")
+			except:
+				synset1 = wn.synset(word1+".v." + sense1)
+		try:
+			synset2 = wn.synset(word2 +".n." + sense2)
+		except:
+			try: 
+				synset2 = wn.synset(word2+".n.01")
+			except:
+				synset2 = wn.synset(word2+".v." + sense1)
+	except:
+		return "JUST GUESS"
+
+
+	hypernyms = synset1.hypernyms()
+	hyponyms = synset1.hyponyms()
+
+	related = hypernyms + hyponyms
+	maxSimilarity = 0
+	mostSimilar = None
+	for item in related:
+
+		mySimilarity = synset2.wup_similarity(synset1)
+		if mySimilarity > maxSimilarity:
+			maxSimilarity = mySimilarity
+			mostSimilar = item
+
+	return(str(mostSimilar)[8:-7])
+
+
+
+
 def singleMousePressed(event, data):
+	if (event.x > data.width/2 + 200) and(event.x < data.width/2 + 300) and(event.y > data.height/2 + 250) and(event.y < data.height/2 + 300):
+		data.turnActive = True
+		data.singleClue = singleGenerateClues(data)
+		
+
 	if data.turnActive and event.x > data.margin and event.x < data.margin + data.cellWidth*data.numCells:
 		if event.y > data.margin and event. y < data.margin + data.cellHeight*data.numCells:
 			row = (event.y - data.margin) // data.cellHeight
 			col = (event.x - data.margin)// data.cellWidth
 			clickedWord = data.gameMap[int(row)][int(col)]
 			clickedWord.isClickedOn = True
+
+			if clickedWord.allegiance == "red":
+				data.redScore += 1
+			else:
+				data.turnActive = False
+	if data.redScore == 9:
+		data.mode = "singleEnd"
 		
 
 def singleKeyPressed(event, data):
@@ -386,10 +526,9 @@ def singleKeyPressed(event, data):
 
 def singleTimerFired(data):
 	if data.timerCalls % 10 == 0: #Every second
-		data.time -= 1
+		data.singleTime += 1
 	data.timerCalls += 1
-	if data.time < 1:
-		data.mode = "end"
+
 	
 
 def singleDrawBoard(canvas,data):
@@ -406,12 +545,22 @@ def singleDrawBoard(canvas,data):
 				round_rectangle(canvas,data.margin+left, data.margin+top, data.margin+left+data.cellWidth, data.margin+top+data.cellHeight, radius=20, fill=data.colors["startingColor"], outline = "white", width = 4)
 			canvas.create_text(data.margin+left+data.cellWidth/2, data.margin+top+data.cellHeight/2,
 					text = myWord.value, fill ="black", font = data.font2)
+	
 
 def singleRedrawAll(canvas, data):
 	#Draws everything in game mode
 	singleDrawBoard(canvas,data)
 	canvas.create_text(data.width/2, data.height/2 +275,
-						text = str(data.time), font=data.fontTimer)
+						text = str(data.singleTime), font=data.fontTimer)
+	
+
+	canvas.create_rectangle(data.width/2+190 , data.height/2+250, data.width/2+310, 
+		data.height/2 + 300,outline = "white", fill = data.colors["assassin"])
+
+
+	canvas.create_text(data.width/2 + 250, data.height/2 + 275, text = "Clue", font = data.font)
+	canvas.create_text(data.width/2, 15, text = data.redScore, fill = data.colors["red"], font = data.fontTimer)
+	canvas.create_text(data.width/2, data.height/2 + 225, text = "Your clue is: " + data.singleClue, font = data.font, fill = data.colors["red"])
 ####################################
 # Run function from 112 Course Notes
 ####################################

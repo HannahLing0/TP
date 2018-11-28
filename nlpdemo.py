@@ -2,8 +2,7 @@ import nltk
 import random
 from nltk.corpus import wordnet as wn
 
-def polysemy(word):
-        return len(wn.synsets(word))
+
 
 clues = ["TALK", "STICK"]
 word1 = random.choice(clues)
