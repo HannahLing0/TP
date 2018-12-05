@@ -4,7 +4,7 @@ import module_manager
 import tkinter.font
 import nltk
 from nltk.corpus import wordnet as wn
-from multiplayer import playGameMousePressed, playGameTimerFired, playGameKeyPressed, playGameRedrawALl
+
 
 module_manager.review()
 #andrewid: hannahli
@@ -45,7 +45,7 @@ def init(data):
 	data.blueScore = 0
 	data.redScore = 0
 	data.clicksAllowed = 0
-	data.offset = 20
+
 	data.winner = None
 	data.singleClue = ""
 	data.logo = PhotoImage(file='codenames_logo.gif')
@@ -284,9 +284,7 @@ def playGameMousePressed(event, data):
 	elif data.turnActive and event.x > data.margin and event.x < data.margin + data.cellWidth*data.numCells:
 		if event.y > data.margin and event. y < data.margin + data.cellHeight*data.numCells:
 			row = (event.y - data.margin) // data.cellHeight
-			col = (event.x - data.margin - data.offset)// data.cellWidth
-			print("eventx", event.x)
-			print("col", col)
+			col = (event.x - data.margin)// data.cellWidth
 			clickedWord = data.gameMap[int(row)][int(col)]
 			clickedWord.isClickedOn = True
 			if clickedWord.allegiance == "red" and not data.isRedTurn:
@@ -508,7 +506,7 @@ def singleMousePressed(event, data):
 
 	if data.turnActive and event.x > data.margin and event.x < data.margin + data.cellWidth*data.numCells:
 		if event.y > data.margin and event. y < data.margin + data.cellHeight*data.numCells:
-			row = (event.y - data.margin - data.offset) // data.cellHeight
+			row = (event.y - data.margin) // data.cellHeight
 			col = (event.x - data.margin)// data.cellWidth
 			clickedWord = data.gameMap[int(row)][int(col)]
 			clickedWord.isClickedOn = True
